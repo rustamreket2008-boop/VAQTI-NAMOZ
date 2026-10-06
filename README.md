@@ -1,0 +1,1 @@
+VAQTI NAMOZ
