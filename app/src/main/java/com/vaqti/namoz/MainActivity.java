@@ -1,10 +1,10 @@
-
 package com.vaqti.namoz;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
                     && citySpinner.getSelectedItemPosition() >= 0) {
                 updateTimes(citySpinner.getSelectedItemPosition());
             }
-            handler.postDelayed(this, 60 * 1000);
+            handler.postDelayed(this, 60000);
         }
     };
 
@@ -90,9 +90,12 @@ public class MainActivity extends Activity {
         getWindow().setNavigationBarColor(background);
 
         buildScreen();
-        updateTimes(citySpinner.getSelectedItemPosition());
 
-        handler.postDelayed(dailyRefresh, 60 * 1000);
+        if (citySpinner.getSelectedItemPosition() >= 0) {
+            updateTimes(citySpinner.getSelectedItemPosition());
+        }
+
+        handler.postDelayed(dailyRefresh, 60000);
     }
 
     @Override
@@ -133,8 +136,8 @@ public class MainActivity extends Activity {
         root.addView(label, match());
 
         citySpinner = new Spinner(this);
-        String[] cityNames = new String[cities.length];
 
+        String[] cityNames = new String[cities.length];
         for (int i = 0; i < cities.length; i++) {
             cityNames[i] = cities[i].name;
         }
@@ -152,9 +155,8 @@ public class MainActivity extends Activity {
         LinearLayout cityBox = new LinearLayout(this);
         cityBox.setPadding(dp(10), 0, dp(10), 0);
         cityBox.setBackground(roundBox(green, 16));
-        cityBox.addView(citySpinner, new LinearLayout.LayoutParams(
-            -1, dp(54)
-        ));
+        cityBox.addView(citySpinner,
+            new LinearLayout.LayoutParams(-1, dp(54)));
         root.addView(cityBox, match());
 
         cityTitle = text("", 21, white, true);
@@ -173,13 +175,32 @@ public class MainActivity extends Activity {
         prayerContainer.setOrientation(LinearLayout.VERTICAL);
         root.addView(prayerContainer, match());
 
+        // Қисми функсияҳои иловагӣ
+        TextView featureTitle = text(
+            "ФУНКСИЯҲОИ БАРНОМА", 16, gold, true
+        );
+        featureTitle.setPadding(dp(3), dp(22), 0, dp(12));
+        root.addView(featureTitle, match());
+
+        addFeatureRow(root,
+            "🧭  Қибланамо", QiblaActivity.class,
+            "📿  Тасбеҳ", TasbihActivity.class);
+
+        addFeatureRow(root,
+            "🌙  Тақвими ҳиҷрӣ", HijriCalendarActivity.class,
+            "🤲  Дуоҳо", DuaActivity.class);
+
+        addFeatureRow(root,
+            "📖  Қуръони карим", QuranActivity.class,
+            "🕌  Масҷидҳо", MosqueActivity.class);
+
         TextView note = text(
-            "Вақтҳо ҳисобӣ мебошанд. Барои дақиқӣ бо тақвими " +
-            "масҷиди маҳаллӣ муқоиса кунед.",
+            "Вақтҳо ҳисобӣ мебошанд. Барои дақиқӣ бо тақвими "
+                + "масҷиди маҳаллӣ муқоиса кунед.",
             12, 0xFF9AAFA7, false
         );
         note.setGravity(Gravity.CENTER);
-        note.setPadding(dp(8), dp(18), dp(8), dp(8));
+        note.setPadding(dp(8), dp(22), dp(8), dp(8));
         root.addView(note, match());
 
         citySpinner.setOnItemSelectedListener(
@@ -195,12 +216,73 @@ public class MainActivity extends Activity {
                 }
 
                 @Override
-                public void onNothingSelected(AdapterView<?> parent) {
+                public void onNothingSelected(
+                    AdapterView<?> parent
+                ) {
                 }
             }
         );
 
         setContentView(scroll);
+    }
+
+    private void addFeatureRow(
+        LinearLayout root,
+        String firstTitle,
+        Class<?> firstActivity,
+        String secondTitle,
+        Class<?> secondActivity
+    ) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+
+        LinearLayout.LayoutParams rowParams =
+            new LinearLayout.LayoutParams(-1, -2);
+        rowParams.bottomMargin = dp(10);
+        root.addView(row, rowParams);
+
+        row.addView(
+            featureButton(firstTitle, firstActivity),
+            new LinearLayout.LayoutParams(0, dp(64), 1)
+        );
+
+        View space = new View(this);
+        row.addView(space,
+            new LinearLayout.LayoutParams(dp(10), 1));
+
+        row.addView(
+            featureButton(secondTitle, secondActivity),
+            new LinearLayout.LayoutParams(0, dp(64), 1)
+        );
+    }
+
+    private TextView featureButton(
+        String title,
+        Class<?> activityClass
+    ) {
+        TextView button = text(title, 14, white, true);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(dp(5), dp(6), dp(5), dp(6));
+        button.setBackground(roundBox(green, 16));
+        button.setClickable(true);
+        button.setFocusable(true);
+
+        button.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent(
+                    MainActivity.this, activityClass
+                );
+                startActivity(intent);
+            } catch (Exception e) {
+                android.widget.Toast.makeText(
+                    MainActivity.this,
+                    "Экран кушода нашуд.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
+
+        return button;
     }
 
     private void updateTimes(int position) {
@@ -216,7 +298,9 @@ public class MainActivity extends Activity {
         );
 
         Date now = cal.getTime();
+
         cityTitle.setText("📍 " + city.name);
+
         dateText.setText(new SimpleDateFormat(
             "EEEE, dd MMMM yyyy", new Locale("tg")
         ).format(now));
@@ -234,7 +318,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void addCard(String icon, String name, String time) {
+    private void addCard(
+        String icon, String name, String time
+    ) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -247,10 +333,12 @@ public class MainActivity extends Activity {
         prayerContainer.addView(card, params);
 
         TextView symbol = text(icon, 26, gold, false);
-        card.addView(symbol, new LinearLayout.LayoutParams(dp(45), -2));
+        card.addView(symbol,
+            new LinearLayout.LayoutParams(dp(45), -2));
 
         TextView prayer = text(name, 16, white, true);
-        card.addView(prayer, new LinearLayout.LayoutParams(0, -2, 1));
+        card.addView(prayer,
+            new LinearLayout.LayoutParams(0, -2, 1));
 
         TextView timeView = text(time, 22, gold, true);
         card.addView(timeView);
@@ -325,13 +413,17 @@ public class MainActivity extends Activity {
         t.setText(value);
         t.setTextSize(size);
         t.setTextColor(color);
+
         if (bold) {
             t.setTypeface(null, Typeface.BOLD);
         }
+
         return t;
     }
 
-    private GradientDrawable roundBox(int color, int radius) {
+    private GradientDrawable roundBox(
+        int color, int radius
+    ) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
         d.setCornerRadius(dp(radius));
@@ -358,4 +450,4 @@ public class MainActivity extends Activity {
             this.longitude = longitude;
         }
     }
-                                }
+                }
