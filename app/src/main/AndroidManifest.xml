@@ -20,6 +20,30 @@
 
         </activity>
 
+        <activity
+            android:name=".QiblaActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".TasbihActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".HijriCalendarActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".DuaActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".QuranActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".MosqueActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
