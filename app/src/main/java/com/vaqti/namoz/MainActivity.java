@@ -3,6 +3,8 @@ package com.vaqti.namoz;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -30,7 +32,21 @@ public class MainActivity extends Activity {
 
     private Spinner citySpinner;
     private LinearLayout prayerContainer;
-    private TextView cityTitle, dateText;
+    private TextView cityTitle;
+    private TextView dateText;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private final Runnable dailyRefresh = new Runnable() {
+        @Override
+        public void run() {
+            if (citySpinner != null
+                    && citySpinner.getSelectedItemPosition() >= 0) {
+                updateTimes(citySpinner.getSelectedItemPosition());
+            }
+            handler.postDelayed(this, 60 * 1000);
+        }
+    };
 
     private final City[] cities = {
         new City("Душанбе", 38.5598, 68.7870),
@@ -54,8 +70,12 @@ public class MainActivity extends Activity {
     };
 
     private final String[] names = {
-        "Бомдод", "Тулӯи офтоб", "Пешин",
-        "Аср (Ҳанафӣ)", "Шом", "Хуфтан"
+        "Бомдод",
+        "Тулӯи офтоб",
+        "Пешин",
+        "Аср (Ҳанафӣ)",
+        "Шом",
+        "Хуфтан"
     };
 
     private final String[] icons = {
@@ -70,7 +90,15 @@ public class MainActivity extends Activity {
         getWindow().setNavigationBarColor(background);
 
         buildScreen();
-        updateTimes(0);
+        updateTimes(citySpinner.getSelectedItemPosition());
+
+        handler.postDelayed(dailyRefresh, 60 * 1000);
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacks(dailyRefresh);
+        super.onDestroy();
     }
 
     private void buildScreen() {
@@ -98,7 +126,9 @@ public class MainActivity extends Activity {
         subtitle.setPadding(0, dp(5), 0, dp(20));
         root.addView(subtitle, match());
 
-        TextView label = text("📍  ШАҲРРО ИНТИХОБ КУН", 14, gold, true);
+        TextView label = text(
+            "📍  ШАҲРРО ИНТИХОБ КУН", 14, gold, true
+        );
         label.setPadding(dp(4), dp(8), 0, dp(8));
         root.addView(label, match());
 
@@ -156,8 +186,10 @@ public class MainActivity extends Activity {
             new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(
-                    AdapterView<?> parent, View view,
-                    int position, long id
+                    AdapterView<?> parent,
+                    View view,
+                    int position,
+                    long id
                 ) {
                     updateTimes(position);
                 }
@@ -172,13 +204,18 @@ public class MainActivity extends Activity {
     }
 
     private void updateTimes(int position) {
+        if (position < 0 || position >= cities.length
+                || prayerContainer == null) {
+            return;
+        }
+
         City city = cities[position];
 
         Calendar cal = Calendar.getInstance(
             TimeZone.getTimeZone("Asia/Dushanbe")
         );
-        Date now = cal.getTime();
 
+        Date now = cal.getTime();
         cityTitle.setText("📍 " + city.name);
         dateText.setText(new SimpleDateFormat(
             "EEEE, dd MMMM yyyy", new Locale("tg")
@@ -204,9 +241,8 @@ public class MainActivity extends Activity {
         card.setPadding(dp(15), dp(15), dp(15), dp(15));
         card.setBackground(roundBox(green, 18));
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-            -1, -2
-        );
+        LinearLayout.LayoutParams params =
+            new LinearLayout.LayoutParams(-1, -2);
         params.bottomMargin = dp(10);
         prayerContainer.addView(card, params);
 
@@ -220,7 +256,6 @@ public class MainActivity extends Activity {
         card.addView(timeView);
     }
 
-    // Approximate solar calculation; UTC+5 for Tajikistan.
     private double[] calculate(
         double latitude, double longitude, int day
     ) {
@@ -242,16 +277,16 @@ public class MainActivity extends Activity {
             + 0.001480 * Math.sin(3 * g);
 
         double lat = Math.toRadians(latitude);
-
         double noon = 720 - 4 * longitude - eq + 300;
+
         double fajr = noon - hourAngle(lat, dec, -18);
         double sunrise = noon - hourAngle(lat, dec, -0.833);
         double dhuhr = noon + 2;
 
-        // Hanafi shadow factor = 2.
         double asrAngle = Math.toDegrees(Math.atan(
             1.0 / (2.0 + Math.tan(Math.abs(lat - dec)))
         ));
+
         double asr = noon + hourAngle(lat, dec, asrAngle);
         double sunset = noon + hourAngle(lat, dec, -0.833);
         double isha = noon + hourAngle(lat, dec, -17);
@@ -265,6 +300,7 @@ public class MainActivity extends Activity {
         double lat, double dec, double altitude
     ) {
         double h = Math.toRadians(altitude);
+
         double numerator = Math.sin(h)
             - Math.sin(lat) * Math.sin(dec);
         double denominator = Math.cos(lat) * Math.cos(dec);
@@ -289,7 +325,9 @@ public class MainActivity extends Activity {
         t.setText(value);
         t.setTextSize(size);
         t.setTextColor(color);
-        if (bold) t.setTypeface(null, Typeface.BOLD);
+        if (bold) {
+            t.setTypeface(null, Typeface.BOLD);
+        }
         return t;
     }
 
@@ -311,7 +349,8 @@ public class MainActivity extends Activity {
 
     private static class City {
         final String name;
-        final double latitude, longitude;
+        final double latitude;
+        final double longitude;
 
         City(String name, double latitude, double longitude) {
             this.name = name;
@@ -319,4 +358,4 @@ public class MainActivity extends Activity {
             this.longitude = longitude;
         }
     }
-            }
+                                }
